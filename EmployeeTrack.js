@@ -1,6 +1,7 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
 var fs = require("fs");
+require("console.table");
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -13,10 +14,10 @@ var connection = mysql.createConnection({
 
   // Your password
   password: "root",
-  database: "employeeDB"
+  database: "employeeDB",
 });
 
-connection.connect(function(err) {
+connection.connect(function (err) {
   if (err) throw err;
   runSearch();
 });
@@ -40,87 +41,82 @@ function runSearch() {
         "*Delete a department",
         "*Delete a role",
         "*Delete a employee",
-        "*See the total utilized budget of a department"
-      ]
+        "*See the total utilized budget of a department",
+      ],
     })
-    .then(function(answer) {
+    .then(function (answer) {
       switch (answer.action) {
-      case "Add a department":
-        addDept();
-        break;
+        case "Add a department":
+          addDept();
+          break;
 
-      case "Add a role":
-        addRole();
-        break;
+        case "Add a role":
+          addRole();
+          break;
 
-      case "Add a employee":
-        addEmp();
-        break;
+        case "Add a employee":
+          addEmp();
+          break;
 
-      case "View a department":
-        viewDept();
-        break;
+        case "View a department":
+          viewDept();
+          break;
 
-      case "View a role":
-        viewRole();
-        break;
+        case "View a role":
+          viewRole();
+          break;
 
-      case "View a employee":
-        viewEmp();
-        break;
+        case "View a employee":
+          viewEmp();
+          break;
 
-      case "Update an employee's role":
-        viewDept();
-        break;
-  
-      case "*Update an employee's manager":
-        viewRole();
-        break;
-  
-      case "*View employees by a manager's id":
-        viewEmp();
-        break;  
+        case "Update an employee's role":
+          updateRole();
+          break;
 
-      case "*Delete a department":
-        songAndAlbumSearch();
-        break;
+        case "*Update an employee's manager":
+          viewRole();
+          break;
 
-      case "*Delete a role":
-        viewRole();
-        break;
-  
-      case "*Delete a employee":
-        viewEmp();
-        break;  
+        case "*View employees by a manager's id":
+          viewEmp();
+          break;
 
-      case "*See the total utilized budget of a department":
-        songAndAlbumSearch();
-        break;
+        case "*Delete a department":
+          songAndAlbumSearch();
+          break;
+
+        case "*Delete a role":
+          viewRole();
+          break;
+
+        case "*Delete a employee":
+          viewEmp();
+          break;
+
+        case "*See the total utilized budget of a department":
+          songAndAlbumSearch();
+          break;
       }
     });
 }
 
 function addDept() {
   inquirer
-    .prompt({
-      type: "input",
-      name: "dept_id",      
-      message: "What is the ID for the new department?"
-    },
-    {
-      type: "input",
-      name: "dept_name",
-      message: "What is the name of this department?"
-    })
-    .then(function(answer) {
-      
+    .prompt([
+      {
+        type: "input",
+        name: "dept_name",
+        message: "What is the name of this department?",
+      },
+    ])
+    .then(function (answer) {
       connection.query(
-        "INSERT INTO depts SET ?",
+        "INSERT INTO department SET ?",
         {
-          dept_id: answer.dept_id,
-          dept_name: answer.dept_name
+          dept_name: answer.dept_name,
         },
-        function(err) {
+        function (err) {
           if (err) throw err;
           console.log("Your department was created successfully!");
           runSearch();
@@ -130,117 +126,126 @@ function addDept() {
 }
 
 function addRole() {
-  inquirer
-    .prompt({
-      type: "input",
-      name: "role_id",      
-      message: "What is the ID for the new role?"
-    },
-    {
-      type: "input",
-      name: "title",      
-      message: "What is the title for the new role?"
-    },
-    {
-      type: "input",
-      name: "salary",
-      message: "What is the salary for the new role?"
-    },
-    {
-      type: "input",
-      name: "dept_id",
-      message: "What is the department id associated with this role?"
-    })
-    .then(function(answer) {
-      
-      connection.query(
-        "INSERT INTO emp_roles SET ?",
+  connection.query("SELECT * FROM department", function (err, results) {
+    if (err) {
+      throw err;
+    } else {
+      var deptChoices = results.map(({ dept_id, dept_name }) => ({
+        name: dept_name,
+        value: dept_id,
+      }));
+    }
+
+    inquirer
+      .prompt([
         {
-          role_id: answer.role_id,
-          title: answer.title,
-          salary: answer.salary,          
-          dept_id: answer.dept_id
+          type: "input",
+          name: "title",
+          message: "What is the title for the new role?",
         },
-        function(err) {
-          if (err) throw err;
-          console.log("Your employee role was created successfully!");
-          runSearch();
-        }
-      );
-    });
+        {
+          type: "input",
+          name: "salary",
+          message: "What is the salary for the new role?",
+        },
+        {
+          type: "list",
+          name: "dept_id",
+          message: "What is the department id associated with this role?",
+          choices: deptChoices,
+        },
+      ])
+      .then(function (answer) {
+        connection.query(
+          "INSERT INTO role SET ?",
+          {
+            title: answer.title,
+            salary: answer.salary,
+            dept_id: answer.dept_id,
+          },
+          function (err) {
+            if (err) throw err;
+            console.log("Your employee role was created successfully!");
+            runSearch();
+          }
+        );
+      });
+  });
 }
 
 function addEmp() {
-  inquirer
-    .prompt({
-      type: "input",
-      name: "emp_id",      
-      message: "What is the ID for the new employee?"
-    },
-    {
-      type: "input",
-      name: "first_name",      
-      message: "What is the first name of the new employee?"
-    },
-    {
-      type: "input",
-      name: "last_name",      
-      message: "What is the last name of the new employee?"
-    },
-    {
-      type: "input",
-      name: "role_id",      
-      message: "What is the role ID for the new employee?"
-    },
-    {
-      type: "input",
-      name: "manager_id",
-      message: "What is the manager ID for the new employee?"
-    })
-    .then(function(answer) {
-      
-      connection.query(
-        "INSERT INTO employees SET ?",
+  connection.query("SELECT role_id, title FROM role", function (err, results) {
+    if (err) {
+      throw err;
+    } else {
+      var roleChoices = results.map(({ role_id, title }) => ({
+        name: title,
+        value: role_id,
+      }));
+    }
+    // var empChoices =
+
+    inquirer
+      .prompt([
         {
-          emp_id: answer.emp_id,
-          first_name: answer.first_name,
-          last_name: answer.last_name,
-          role_id: answer.role_id,
-          manager_id: answer.manager_id
+          type: "input",
+          name: "first_name",
+          message: "What is the first name of the new employee?",
         },
-        function(err) {
-          if (err) throw err;
-          console.log("Your employee was created successfully!");
-          // re-prompt the user for if they want to bid or post
-          runSearch();
-        }
-      );
-    });
+        {
+          type: "input",
+          name: "last_name",
+          message: "What is the last name of the new employee?",
+        },
+        {
+          type: "list",
+          name: "role_id",
+          message: "What is the role ID for the new employee?",
+          choices: roleChoices,
+        },
+        {
+          type: "input",
+          name: "manager_id",
+          message: "What is the manager ID for the new employee?",
+          // choices: empChoices
+        },
+      ])
+      .then(function (answer) {
+        connection.query(
+          "INSERT INTO employee SET ?",
+          {
+            first_name: answer.first_name,
+            last_name: answer.last_name,
+            role_id: answer.role_id,
+            manager_id: answer.manager_id,
+          },
+          function (err) {
+            if (err) throw err;
+            console.log("Your employee was created successfully!");
+            runSearch();
+          }
+        );
+      });
+  });
 }
 //-------------------------------------------------------------
 function viewDept() {
   inquirer
     .prompt({
       type: "input",
-      name: "dept_id",      
-      message: "What is the ID for the new department?"
-    },
-    {
-      type: "input",
-      name: "dept_name",
-      message: "What is the name of this department?"
+      name: "dept_id",
+      message: "What is the department ID to view?",
     })
-    .then(function(answer) {
-      
-      connection.query(
-        "INSERT INTO depts SET ?",
+    .then(function (answer) {
+      var depts = connection.query(
+        "SELECT * FROM department",
         {
           dept_id: answer.dept_id,
-          dept_name: answer.dept_name
+          dept_name: answer.dept_name,
         },
-        function(err) {
+        function (err) {
           if (err) throw err;
-          console.log("Your department was created successfully!");
+          console.log("Your department was viewed successfully!");
           runSearch();
         }
       );
@@ -249,37 +254,32 @@ function viewDept() {
 
 function viewRole() {
   inquirer
-    .prompt({
-      type: "input",
-      name: "role_id",      
-      message: "What is the ID for the new role?"
-    },
-    {
-      type: "input",
-      name: "title",      
-      message: "What is the title for the new role?"
-    },
-    {
-      type: "input",
-      name: "salary",
-      message: "What is the salary for the new role?"
-    },
-    {
-      type: "input",
-      name: "dept_id",
-      message: "What is the department id associated with this role?"
-    })
-    .then(function(answer) {
-      
+    .prompt([
+      {
+        type: "input",
+        name: "title",
+        message: "What is the title for the new role?",
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "What is the salary for the new role?",
+      },
+      {
+        type: "input",
+        name: "dept_id",
+        message: "What is the department id associated with this role?",
+      },
+    ])
+    .then(function (answer) {
       connection.query(
-        "INSERT INTO emp_roles SET ?",
+        "INSERT INTO role SET ?",
         {
-          role_id: answer.role_id,
           title: answer.title,
-          salary: answer.salary,          
-          dept_id: answer.dept_id
+          salary: answer.salary,
+          dept_id: answer.dept_id,
         },
-        function(err) {
+        function (err) {
           if (err) throw err;
           console.log("Your employee role was created successfully!");
           runSearch();
@@ -290,33 +290,34 @@ function viewRole() {
 
 function viewEmp() {
   inquirer
-    .prompt({
-      type: "input",
-      name: "emp_id",      
-      message: "What is the ID for the new employee?"
-    },
-    {
-      type: "input",
-      name: "first_name",      
-      message: "What is the first name of the new employee?"
-    },
-    {
-      type: "input",
-      name: "last_name",      
-      message: "What is the last name of the new employee?"
-    },
-    {
-      type: "input",
-      name: "role_id",      
-      message: "What is the role ID for the new employee?"
-    },
-    {
-      type: "input",
-      name: "manager_id",
-      message: "What is the manager ID for the new employee?"
-    })
-    .then(function(answer) {
-      
+    .prompt(
+      {
+        type: "input",
+        name: "emp_id",
+        message: "What is the ID for the new employee?",
+      },
+      {
+        type: "input",
+        name: "first_name",
+        message: "What is the first name of the new employee?",
+      },
+      {
+        type: "input",
+        name: "last_name",
+        message: "What is the last name of the new employee?",
+      },
+      {
+        type: "input",
+        name: "role_id",
+        message: "What is the role ID for the new employee?",
+      },
+      {
+        type: "input",
+        name: "manager_id",
+        message: "What is the manager ID for the new employee?",
+      }
+    )
+    .then(function (answer) {
       connection.query(
         "INSERT INTO employees SET ?",
         {
@@ -324,9 +325,9 @@ function viewEmp() {
           first_name: answer.first_name,
           last_name: answer.last_name,
           role_id: answer.role_id,
-          manager_id: answer.manager_id
+          manager_id: answer.manager_id,
         },
-        function(err) {
+        function (err) {
           if (err) throw err;
           console.log("Your employee was created successfully!");
           // re-prompt the user for if they want to bid or post
@@ -336,119 +337,67 @@ function viewEmp() {
     });
 }
 
-///-----------------------------------------------------
-function multiSearch() {
-  var query = "SELECT artist FROM top5000 GROUP BY artist HAVING count(*) > 1";
-  connection.query(query, function(err, res) {
-    for (var i = 0; i < res.length; i++) {
-      console.log(res[i].artist);
-    }
-    runSearch();
-  });
-}
-
-function rangeSearch() {
-  inquirer
-    .prompt([
-      {
-        name: "start",
-        type: "input",
-        message: "Enter starting position: ",
-        validate: function(value) {
-          if (isNaN(value) === false) {
-            return true;
-          }
-          return false;
-        }
-      },
-      {
-        name: "end",
-        type: "input",
-        message: "Enter ending position: ",
-        validate: function(value) {
-          if (isNaN(value) === false) {
-            return true;
-          }
-          return false;
-        }
+function updateRole() {
+  connection.query(
+    "SELECT emp_id, first_name, last_name FROM employee",
+    function (err, results) {
+      if (err) {
+        throw err;
+      } else {
+        var empChoices = results.map(({ emp_id, first_name, last_name }) => ({
+          name: `${last_name}, ${first_name}`,
+          value: emp_id,
+        }));
       }
-    ])
-    .then(function(answer) {
-      var query = "SELECT position,song,artist,year FROM top5000 WHERE position BETWEEN ? AND ?";
-      connection.query(query, [answer.start, answer.end], function(err, res) {
-        for (var i = 0; i < res.length; i++) {
-          console.log(
-            "Position: " +
-              res[i].position +
-              " || Song: " +
-              res[i].song +
-              " || Artist: " +
-              res[i].artist +
-              " || Year: " +
-              res[i].year
-          );
-        }
-        runSearch();
-      });
-    });
-}
 
-function songSearch() {
-  inquirer
-    .prompt({
-      name: "song",
-      type: "input",
-      message: "What song would you like to look for?"
-    })
-    .then(function(answer) {
-      console.log(answer.song);
-      connection.query("SELECT * FROM top5000 WHERE ?", { song: answer.song }, function(err, res) {
-        console.log(
-          "Position: " +
-            res[0].position +
-            " || Song: " +
-            res[0].song +
-            " || Artist: " +
-            res[0].artist +
-            " || Year: " +
-            res[0].year
-        );
-        runSearch();
-      });
-    });
-}
-
-function songAndAlbumSearch() {
-  inquirer
-    .prompt({
-      name: "artist",
-      type: "input",
-      message: "What artist would you like to search for?"
-    })
-    .then(function(answer) {
-      var query = "SELECT top_albums.year, top_albums.album, top_albums.position, top5000.song, top5000.artist ";
-      query += "FROM top_albums INNER JOIN top5000 ON (top_albums.artist = top5000.artist AND top_albums.year ";
-      query += "= top5000.year) WHERE (top_albums.artist = ? AND top5000.artist = ?) ORDER BY top_albums.year, top_albums.position";
-
-      connection.query(query, [answer.artist, answer.artist], function(err, res) {
-        console.log(res.length + " matches found!");
-        for (var i = 0; i < res.length; i++) {
-          console.log(
-            i+1 + ".) " +
-              "Year: " +
-              res[i].year +
-              " Album Position: " +
-              res[i].position +
-              " || Artist: " +
-              res[i].artist +
-              " || Song: " +
-              res[i].song +
-              " || Album: " +
-              res[i].album
-          );
+      connection.query("SELECT role_id, title FROM role", function (
+        err,
+        results
+      ) {
+        if (err) {
+          throw err;
+        } else {
+          var roleChoices = results.map(({ role_id, title }) => ({
+            name: title,
+            value: role_id,
+          }));
         }
 
-        runSearch();
+        inquirer
+          .prompt([
+            {
+              type: "list",
+              name: "empLast",
+              message: "What employee woulc you like to update?",
+              choices: empChoices,
+            },
+            {
+              type: "list",
+              name: "role_id",
+              message: "What role would you like to give them",
+              choices: roleChoices,
+            },
+          ])
+          .then(function (answer) {
+            console.log(answer.empLast + "  " + answer.role_id);
+            connection.query(
+              "UPDATE employee SET ? WHERE ?",
+              [
+                {
+                  role_id: answer.role_id,
+                },
+                {
+                  emp_id: answer.empLast,
+                },
+              ],
+              function (err) {
+                if (err) throw err;
+                console.log("Your employee was created successfully!");
+                runSearch();
+              }
+            );
+          });
       });
-    });
+    }
+  );
 }
