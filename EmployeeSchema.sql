@@ -25,8 +25,7 @@ CREATE TABLE employee (
   role_id INT NOT NULL,
   manager_id INT,
   PRIMARY KEY (emp_id),
-  FOREIGN KEY (role_id) REFERENCES role(role_id),
-  FOREIGN KEY (manager_id) REFERENCES employee(emp_id)
+  FOREIGN KEY (role_id) REFERENCES role(role_id)
 );
 
 SELECT * FROM employee;

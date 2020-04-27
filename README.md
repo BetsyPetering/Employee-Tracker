@@ -1,7 +1,8 @@
 Employee Tracker
 
-Developers are often tasked with creating interfaces that make it easy for non-developers to view and interact with information stored in databases. Often these interfaces are known as **C**ontent **M**anagement **S**ystems. In this homework assignment, your challenge is to architect and build a solution for managing a company's employees using node, inquirer, and MySQL.
+Developers are often tasked with creating interfaces that make it easy for non-developers to view and interact with information stored in databases. Often these interfaces are known as CMS, Content Management Systems. In this homework assignment, the challenge was to architect and build a solution for managing a company's employees using node, inquirer, and MySQL.
 
+The MySQL Database contained the following Tables:
 * **department**:
 
   * **id** - INT PRIMARY KEY
@@ -22,7 +23,7 @@ Developers are often tasked with creating interfaces that make it easy for non-d
   * **role_id** - INT to hold reference to role employee has
   * **manager_id** - INT to hold reference to another employee that manager of the current employee. This field may be null if the employee has no manager
   
-Build a command-line application that at a minimum allows the user to:
+I built a command-line application that allows the user to:
 
   * Add departments, roles, employees
 
@@ -30,14 +31,4 @@ Build a command-line application that at a minimum allows the user to:
 
   * Update employee roles
 
-Bonus points if you're able to:
-
-  * Update employee managers
-
   * View employees by manager
-
-  * Delete departments, roles, and employees
-
-  * View the total utilized budget of a department -- ie the combined salaries of all employees in that department
-
-

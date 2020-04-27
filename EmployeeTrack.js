@@ -1,18 +1,11 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
-var fs = require("fs");
 require("console.table");
 
 var connection = mysql.createConnection({
   host: "localhost",
-
-  // Your port; if not 3306
   port: 3306,
-
-  // Your username
   user: "root",
-
-  // Your password
   password: "root",
   database: "employeeDB",
 });
@@ -32,16 +25,11 @@ function runSearch() {
         "Add a department",
         "Add a role",
         "Add a employee",
-        "View a department",
-        "View a role",
-        "View a employee",
+        "View all departments",
+        "View all roles",
+        "View all employees",
         "Update an employee's role",
-        "*Update an employee's manager",
-        "*View employees by a manager's id",
-        "*Delete a department",
-        "*Delete a role",
-        "*Delete a employee",
-        "*See the total utilized budget of a department",
+        "View employees by a manager's id"
       ],
     })
     .then(function (answer) {
@@ -58,15 +46,15 @@ function runSearch() {
           addEmp();
           break;
 
-        case "View a department":
+        case "View all departments":
           viewDept();
           break;
 
-        case "View a role":
+        case "View all roles":
           viewRole();
           break;
 
-        case "View a employee":
+        case "View all employees":
           viewEmp();
           break;
 
@@ -74,28 +62,8 @@ function runSearch() {
           updateRole();
           break;
 
-        case "*Update an employee's manager":
-          viewRole();
-          break;
-
-        case "*View employees by a manager's id":
-          viewEmp();
-          break;
-
-        case "*Delete a department":
-          songAndAlbumSearch();
-          break;
-
-        case "*Delete a role":
-          viewRole();
-          break;
-
-        case "*Delete a employee":
-          viewEmp();
-          break;
-
-        case "*See the total utilized budget of a department":
-          songAndAlbumSearch();
+        case "View employees by a manager's id":
+          viewEmpByMgr();
           break;
       }
     });
@@ -109,6 +77,21 @@ function addDept() {
         name: "dept_name",
         message: "What is the name of this department?",
       },
+      {
+        type: "input",
+        name: "salary",
+        message: "What is the salary for the Manager of this department?",
+      },
+      {
+        type: "input",
+        name: "first_name",
+        message: "What is the Manager's first name?",
+      },
+      {
+        type: "input",
+        name: "last_name",
+        message: "What is the Manager's last name?",
+      },
     ])
     .then(function (answer) {
       connection.query(
@@ -116,10 +99,30 @@ function addDept() {
         {
           dept_name: answer.dept_name,
         },
-        function (err) {
+        function (err, result) {
           if (err) throw err;
-          console.log("Your department was created successfully!");
-          runSearch();
+          const ttl = answer.dept_name;
+          mgrTitle = ttl + " Manager";
+          connection.query(
+            "INSERT INTO role (title, salary, dept_id) VALUES (?, ?, ?)",
+            [mgrTitle, answer.salary, result.insertId],
+            function (err, result2) {
+              if (err) throw err;
+              const manager_id = 0;
+              const role_id = result2.insertId;
+              connection.query(
+                "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
+                [answer.first_name, answer.last_name, role_id, manager_id],
+                function (err) {
+                  if (err) throw err;
+                  console.log(
+                    "The department, this department's manager role, and the manager's employee record were created successfully!"
+                  );
+                  runSearch();
+                }
+              );
+            }
+          );
         }
       );
     });
@@ -135,7 +138,6 @@ function addRole() {
         value: dept_id,
       }));
     }
-
     inquirer
       .prompt([
         {
@@ -165,7 +167,7 @@ function addRole() {
           },
           function (err) {
             if (err) throw err;
-            console.log("Your employee role was created successfully!");
+            console.log("The role was created successfully!");
             runSearch();
           }
         );
@@ -183,7 +185,6 @@ function addEmp() {
         value: role_id,
       }));
     }
-    // var empChoices =
 
     inquirer
       .prompt([
@@ -228,113 +229,36 @@ function addEmp() {
       });
   });
 }
-//-------------------------------------------------------------
+
 function viewDept() {
-  inquirer
-    .prompt({
-      type: "input",
-      name: "dept_id",
-      message: "What is the department ID to view?",
-    })
-    .then(function (answer) {
-      var depts = connection.query(
-        "SELECT * FROM department",
-        {
-          dept_id: answer.dept_id,
-          dept_name: answer.dept_name,
-        },
-        function (err) {
-          if (err) throw err;
-          console.log("Your department was viewed successfully!");
-          runSearch();
-        }
-      );
-    });
+  connection.query("SELECT dept_id, dept_name FROM department", function (
+    err,
+    result,
+    fields
+  ) {
+    if (err) throw err;
+    console.table(result);
+    runSearch();
+  });
 }
 
 function viewRole() {
-  inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "title",
-        message: "What is the title for the new role?",
-      },
-      {
-        type: "input",
-        name: "salary",
-        message: "What is the salary for the new role?",
-      },
-      {
-        type: "input",
-        name: "dept_id",
-        message: "What is the department id associated with this role?",
-      },
-    ])
-    .then(function (answer) {
-      connection.query(
-        "INSERT INTO role SET ?",
-        {
-          title: answer.title,
-          salary: answer.salary,
-          dept_id: answer.dept_id,
-        },
-        function (err) {
-          if (err) throw err;
-          console.log("Your employee role was created successfully!");
-          runSearch();
-        }
-      );
-    });
+  connection.query(
+    "SELECT role_id, title, salary, dept_id FROM role",
+    function (err, result, fields) {
+      if (err) throw err;
+      console.table(result);
+      runSearch();
+    }
+  );
 }
 
 function viewEmp() {
-  inquirer
-    .prompt(
-      {
-        type: "input",
-        name: "emp_id",
-        message: "What is the ID for the new employee?",
-      },
-      {
-        type: "input",
-        name: "first_name",
-        message: "What is the first name of the new employee?",
-      },
-      {
-        type: "input",
-        name: "last_name",
-        message: "What is the last name of the new employee?",
-      },
-      {
-        type: "input",
-        name: "role_id",
-        message: "What is the role ID for the new employee?",
-      },
-      {
-        type: "input",
-        name: "manager_id",
-        message: "What is the manager ID for the new employee?",
-      }
-    )
-    .then(function (answer) {
-      connection.query(
-        "INSERT INTO employees SET ?",
-        {
-          emp_id: answer.emp_id,
-          first_name: answer.first_name,
-          last_name: answer.last_name,
-          role_id: answer.role_id,
-          manager_id: answer.manager_id,
-        },
-        function (err) {
-          if (err) throw err;
-          console.log("Your employee was created successfully!");
-          // re-prompt the user for if they want to bid or post
-          runSearch();
-        }
-      );
-    });
+  connection.query("SELECT * FROM employee", function (err, result, fields) {
+    if (err) throw err;
+    console.table(result);
+    runSearch();
+  });
 }
 
 function updateRole() {
@@ -349,7 +273,6 @@ function updateRole() {
           value: emp_id,
         }));
       }
-
       connection.query("SELECT role_id, title FROM role", function (
         err,
         results
@@ -362,7 +285,6 @@ function updateRole() {
             value: role_id,
           }));
         }
-
         inquirer
           .prompt([
             {
@@ -379,7 +301,6 @@ function updateRole() {
             },
           ])
           .then(function (answer) {
-            console.log(answer.empLast + "  " + answer.role_id);
             connection.query(
               "UPDATE employee SET ? WHERE ?",
               [
@@ -392,7 +313,7 @@ function updateRole() {
               ],
               function (err) {
                 if (err) throw err;
-                console.log("Your employee was created successfully!");
+                console.log("This employee's role was successfully updated!");
                 runSearch();
               }
             );
@@ -400,4 +321,24 @@ function updateRole() {
       });
     }
   );
+}
+
+function viewEmpByMgr() {
+  inquirer
+    .prompt({
+      type: "input",
+      name: "manager",
+      message: "What is the Manager ID for the employees to list?",
+    })
+    .then(function (answer) {
+      var query =
+        "SELECT emp_id, first_name, last_name, role_id, manager_id FROM employee WHERE ?";
+      connection.query(query, { manager_id: answer.manager }, function (
+        err,
+        res
+      ) {
+        console.table(res);
+        runSearch();
+      });
+    });
 }
